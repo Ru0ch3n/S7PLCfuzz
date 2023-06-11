@@ -10,8 +10,8 @@
 #  8.  重构代码，主体部分更加简洁明朗                                                                √
 #  9.  完善日志功能                                                                              √
 #  10. 引入相似度计算（最小编辑距离）                                                                √
-#================================================================================|<<<<<<<<<<<<|
-
+# ================================================================================|<<<<<<<<<<<<|
+# Under developing
 import socket
 import threading
 import time
@@ -21,10 +21,10 @@ from scapy.packet import Raw, Packet, fuzz
 from scapy.supersocket import StreamSocket
 from utils.utils import *
 
-SRC = '192.168.0.241'
-DST = '192.168.0.1'
+SRC = "192.168.0.241"
+DST = "192.168.0.1"
 DPORT = 102
-FUZZ_LOG_CSV = open('fuzz_log.csv', 'a+')
+FUZZ_LOG_CSV = open("fuzz_log.csv", "a+")
 FUZZ_LOG_WRITER = csv.writer(FUZZ_LOG_CSV)
 MODE = 1
 
@@ -32,30 +32,41 @@ cotp_cr_packet = Packet(str2byte(simatic_200_smart_hello))
 s7comm_setup_packet = Packet(str2byte(set_comm))
 local = threading.local()
 
+
 def test_proccess():
     local.counter = 0
     s = socket.socket()
     s.connect(("192.168.0.1", DPORT))
-    ss = StreamSocket(s, Raw)    # supersocket.StreamSocket是Scapy对原生Socket的包装增强。使用Kernel级别TCP Stack，故不再像前用户态版本一样需要手动配置防火墙规则拦截Kernel堆栈发出的RST数据包，且大大提升测试效率
+    ss = StreamSocket(
+        s, Raw
+    )  # supersocket.StreamSocket是Scapy对原生Socket的包装增强。使用Kernel级别TCP Stack，故不再像前用户态版本一样需要手动配置防火墙规则拦截Kernel堆栈发出的RST数据包，且大大提升测试效率
     try:
         ss.sr(cotp_cr_packet, verbose=0)
         ss.sr(s7comm_setup_packet, verbose=0)
         while local.counter < 10:
             fuzz_packet = Packet(str2byte(get_s7_fuzz_data()))
-            ans= ss.sr1(fuzz(fuzz_packet), verbose=0)
-            log_row = [byte2str(fuzz_packet.build()), byte2str(ans.build()), time.time(), MODE]
+            ans = ss.sr1(fuzz(fuzz_packet), verbose=0)
+            log_row = [
+                byte2str(fuzz_packet.build()),
+                byte2str(ans.build()),
+                time.time(),
+                MODE,
+            ]
             FUZZ_LOG_WRITER.writerow(log_row)
             local.counter += 1
-            print('send:{}\nrecv{}'.format(log_row[0], log_row[1]), end='\n************\n')
+            print(
+                "send:{}\nrecv{}".format(log_row[0], log_row[1]), end="\n************\n"
+            )
     except:
         s.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     round = 0
     for i in range(1000):
         p1 = Process(target=test_proccess)
-        p2 =  Process(target=test_proccess)
-        p3 =  Process(target=test_proccess)
+        p2 = Process(target=test_proccess)
+        p3 = Process(target=test_proccess)
         p1.start()
         p2.start()
         p3.start()
@@ -73,27 +84,3 @@ if __name__ == '__main__':
         p1.close()
         p2.close()
         p3.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
